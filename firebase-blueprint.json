@@ -1,0 +1,30 @@
+{
+  "entities": {
+    "Analysis": {
+      "title": "Analysis",
+      "description": "A geological analysis of an image.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "ID of the user who uploaded the image" },
+        "imageUrl": { "type": "string", "description": "Base64 thumbnail of the image" },
+        "rockType": { "type": "string" },
+        "indicators": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "mlScore": { "type": "number" },
+        "geminiScore": { "type": "number" },
+        "finalScore": { "type": "number" },
+        "explanation": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "rockType", "mlScore", "geminiScore", "finalScore", "explanation", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}/analyses/{analysisId}": {
+      "schema": { "$ref": "#/entities/Analysis" },
+      "description": "Analyses performed by a specific user."
+    }
+  }
+}

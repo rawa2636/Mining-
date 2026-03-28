@@ -1,0 +1,38 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+    function isValidAnalysis() {
+      return hasRequiredFields(['userId', 'rockType', 'mlScore', 'geminiScore', 'finalScore', 'explanation', 'createdAt']) &&
+             hasOnlyAllowedFields(['userId', 'imageUrl', 'rockType', 'indicators', 'mlScore', 'geminiScore', 'finalScore', 'explanation', 'createdAt']) &&
+             request.resource.data.userId is string &&
+             (!('imageUrl' in request.resource.data) || (request.resource.data.imageUrl is string && request.resource.data.imageUrl.size() < 800000)) &&
+             request.resource.data.rockType is string && request.resource.data.rockType.size() < 500 &&
+             (!('indicators' in request.resource.data) || (request.resource.data.indicators is list && request.resource.data.indicators.size() < 50)) &&
+             request.resource.data.mlScore is number && request.resource.data.mlScore >= 0 && request.resource.data.mlScore <= 100 &&
+             request.resource.data.geminiScore is number && request.resource.data.geminiScore >= 0 && request.resource.data.geminiScore <= 100 &&
+             request.resource.data.finalScore is number && request.resource.data.finalScore >= 0 && request.resource.data.finalScore <= 100 &&
+             request.resource.data.explanation is string && request.resource.data.explanation.size() < 5000 &&
+             request.resource.data.createdAt is string;
+    }
+
+    match /users/{userId}/analyses/{analysisId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidAnalysis() && request.resource.data.userId == userId;
+      allow update: if false; // Analyses are immutable
+      allow delete: if isOwner(userId);
+    }
+  }
+}

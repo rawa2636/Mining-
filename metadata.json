@@ -1,0 +1,5 @@
+{
+  "name": "GeoVision AI",
+  "description": "Geological sample analysis prototype using Gemini Vision and ML fusion to estimate gold likelihood.",
+  "requestFramePermissions": []
+}
