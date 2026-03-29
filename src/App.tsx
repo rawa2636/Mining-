@@ -234,8 +234,8 @@ export default function App() {
 - explanation: تفسير علمي مبسط باللغة العربية لسبب هذه النسبة، مع التركيز على دور الأكاسيد المكتشفة (نص)
 - regionsOfInterest: مصفوفة (Array) تحتوي على مربعات الإحاطة (Bounding Boxes) للميزات الرئيسية (مثل عروق المرو، الأكاسيد بأنواعها، التشققات) لإنشاء خريطة حرارية. استخدم إحداثيات طبيعية (Normalized coordinates) بين 0.0 و 1.0. كل عنصر يجب أن يحتوي على: label (اسم الميزة بدقة، مثلاً "أكسيد حديد - ليمونيت")، ymin، xmin، ymax، xmax.`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
+      let response;
+      const requestConfig = {
         contents: {
           parts: [
             { text: prompt },
@@ -275,7 +275,35 @@ export default function App() {
             required: ["rockType", "indicators", "geminiGoldLikelihood", "explanation"]
           }
         }
-      });
+      };
+
+      try {
+        // Try the primary Pro model first
+        response = await ai.models.generateContent({
+          model: 'gemini-3.1-pro-preview',
+          ...requestConfig
+        });
+      } catch (proError: any) {
+        console.warn("Pro model failed, falling back to Flash model:", proError);
+        try {
+          // Fallback to the faster/cheaper Flash model if Pro fails (e.g., quota exceeded, overloaded)
+          // Using gemini-2.5-flash as a highly reliable fallback
+          response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            ...requestConfig
+          });
+        } catch (flashError: any) {
+          console.error("Both Pro and Flash models failed:", flashError);
+          
+          // Check if it's a quota error
+          const errorMessage = flashError?.message || String(flashError);
+          if (errorMessage.includes('429') || errorMessage.includes('quota') || errorMessage.includes('RESOURCE_EXHAUSTED')) {
+            throw new Error("عذراً، لقد استنفدت رصيد التحليل المجاني المتاح لك حالياً من جوجل. يرجى المحاولة مرة أخرى غداً، أو استخدام مفتاح API جديد.");
+          }
+          
+          throw new Error("عذراً، خوادم التحليل تواجه ضغطاً عالياً حالياً. يرجى المحاولة بعد قليل.");
+        }
+      }
 
       let resultText = response.text || '{}';
       if (resultText.startsWith('```json')) {
