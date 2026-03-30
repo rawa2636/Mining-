@@ -23,7 +23,7 @@ class ModelAdapter(ABC):
 class GeminiFlashAdapter(ModelAdapter):
     def __init__(self, api_key: str):
         self.client = genai.Client(api_key=api_key)
-        self.model_id = 'gemini-2.5-flash'
+        self.model_id = 'gemini-3.1-pro-preview'
         
     def analyze(self, image_bytes: bytes) -> Dict[str, Any]:
         prompt = """
