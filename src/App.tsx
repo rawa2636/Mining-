@@ -9,39 +9,54 @@ import { twMerge } from 'tailwind-merge';
 import { GoogleGenAI, Type } from '@google/genai';
 
 // --- Ad Component ---
-const AdBanner = ({ format = 'banner', className = '', adSlot = '1234567890' }: { format?: 'banner' | 'rectangle', className?: string, adSlot?: string }) => {
+const AdBanner = ({ format = 'banner', className = '' }: { format?: 'banner' | 'rectangle', className?: string }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    try {
-      // @ts-ignore
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
-    } catch (err) {
-      console.error('AdSense error:', err);
+    // Clear previous ad if any
+    if (containerRef.current) {
+      containerRef.current.innerHTML = '';
     }
-  }, []);
+
+    const key = format === 'banner' ? 'a8772654ade93739b926d6ad5251930b' : '0fc0c0913861ab1e73b10e9ffe62b1ab';
+    const width = format === 'banner' ? 728 : 300;
+    const height = format === 'banner' ? 90 : 250;
+
+    // Set global options for Adsterra
+    // @ts-ignore
+    window.atOptions = {
+      'key' : key,
+      'format' : 'iframe',
+      'height' : height,
+      'width' : width,
+      'params' : {}
+    };
+
+    // Create and inject the script
+    const script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.src = `https://www.highperformanceformat.com/${key}/invoke.js`;
+    script.async = true;
+
+    if (containerRef.current) {
+      containerRef.current.appendChild(script);
+    }
+
+    return () => {
+      // Cleanup on unmount
+      if (containerRef.current) {
+        containerRef.current.innerHTML = '';
+      }
+    };
+  }, [format]);
 
   return (
     <div className={cn(
-      "bg-stone-100 border border-dashed border-stone-300 flex flex-col items-center justify-center text-stone-500 rounded-xl overflow-hidden relative",
-      format === 'banner' ? 'w-full h-24' : 'w-full aspect-video',
+      "flex justify-center items-center overflow-hidden",
+      format === 'banner' ? 'w-full min-h-[90px]' : 'w-full min-h-[250px]',
       className
     )}>
-       {/* Fallback text when ads are blocked or loading */}
-       <div className="absolute inset-0 flex flex-col items-center justify-center -z-10">
-         <span className="absolute top-2 right-2 text-[10px] uppercase tracking-wider bg-stone-200 px-2 py-0.5 rounded text-stone-600 font-bold flex items-center gap-1">
-           <Megaphone className="w-3 h-3" />
-           إعلان
-         </span>
-         <p className="font-bold text-stone-600">مساحة إعلانية</p>
-       </div>
-       
-       <ins
-        className="adsbygoogle"
-        style={{ display: 'block', width: '100%', height: '100%' }}
-        data-ad-client="ca-pub-5323463455120118"
-        data-ad-slot={adSlot} // TODO: Replace with your Ad Slot ID
-        data-ad-format="auto"
-        data-full-width-responsive="true"
-      ></ins>
+       <div ref={containerRef} className="flex justify-center items-center w-full h-full"></div>
     </div>
   );
 };
@@ -473,8 +488,8 @@ export default function App() {
 
       <main className="max-w-5xl mx-auto px-4 py-8">
         {/* Top Banner Ad */}
-        <div className="mb-8">
-          <AdBanner format="banner" adSlot="1111111111" />
+        <div className="mb-8 flex justify-center">
+          <AdBanner format="banner" />
         </div>
 
         {activeTab === 'analyze' ? (
@@ -543,13 +558,15 @@ export default function App() {
               </div>
 
               {/* Ad while waiting or below upload */}
-              {isAnalyzing ? (
-                <div className="animate-pulse">
-                  <AdBanner format="rectangle" className="bg-amber-50 border-amber-200" adSlot="2222222222" />
-                </div>
-              ) : (
-                <AdBanner format="rectangle" adSlot="2222222222" />
-              )}
+              <div className="flex justify-center">
+                {isAnalyzing ? (
+                  <div className="animate-pulse w-full flex justify-center">
+                    <div className="w-[300px] h-[250px] bg-amber-50 border border-amber-200 rounded-xl"></div>
+                  </div>
+                ) : (
+                  <AdBanner format="rectangle" />
+                )}
+              </div>
             </div>
 
             {/* Results Section */}
@@ -698,8 +715,8 @@ export default function App() {
         )}
 
         {/* Bottom Banner Ad */}
-        <div className="mt-8">
-          <AdBanner format="banner" adSlot="3333333333" />
+        <div className="mt-8 flex justify-center">
+          <AdBanner format="banner" />
         </div>
       </main>
     </div>
