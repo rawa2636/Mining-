@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { auth, db, signInWithGoogle, logout } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
-import { Upload, Image as ImageIcon, Loader2, LogOut, History, ChevronRight, Activity, AlertTriangle, Search, AlertCircle, Megaphone } from 'lucide-react';
+import { Upload, Image as ImageIcon, Loader2, LogOut, History, ChevronRight, Activity, AlertTriangle, Search, AlertCircle, Megaphone, Mail, MessageCircle, User } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -10,53 +10,69 @@ import { GoogleGenAI, Type } from '@google/genai';
 
 // --- Ad Component ---
 const AdBanner = ({ format = 'banner', className = '' }: { format?: 'banner' | 'rectangle', className?: string }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const key = format === 'banner' ? 'a8772654ade93739b926d6ad5251930b' : '0fc0c0913861ab1e73b10e9ffe62b1ab';
+  const width = format === 'banner' ? 728 : 300;
+  const height = format === 'banner' ? 90 : 250;
 
-  useEffect(() => {
-    // Clear previous ad if any
-    if (containerRef.current) {
-      containerRef.current.innerHTML = '';
-    }
-
-    const key = format === 'banner' ? 'a8772654ade93739b926d6ad5251930b' : '0fc0c0913861ab1e73b10e9ffe62b1ab';
-    const width = format === 'banner' ? 728 : 300;
-    const height = format === 'banner' ? 90 : 250;
-
-    // Set global options for Adsterra
-    // @ts-ignore
-    window.atOptions = {
-      'key' : key,
-      'format' : 'iframe',
-      'height' : height,
-      'width' : width,
-      'params' : {}
-    };
-
-    // Create and inject the script
-    const script = document.createElement('script');
-    script.type = 'text/javascript';
-    script.src = `https://www.highperformanceformat.com/${key}/invoke.js`;
-    script.async = true;
-
-    if (containerRef.current) {
-      containerRef.current.appendChild(script);
-    }
-
-    return () => {
-      // Cleanup on unmount
-      if (containerRef.current) {
-        containerRef.current.innerHTML = '';
-      }
-    };
-  }, [format]);
+  // Using an iframe with srcDoc is the most reliable way to load Adsterra in a React SPA.
+  // It prevents global `atOptions` variable conflicts when multiple ads are on the same page,
+  // and safely handles Adsterra's use of document.write().
+  const adHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { 
+            margin: 0; 
+            padding: 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            width: 100%;
+            height: 100%;
+            background: transparent; 
+          }
+        </style>
+      </head>
+      <body>
+        <script type="text/javascript">
+          atOptions = {
+            'key' : '${key}',
+            'format' : 'iframe',
+            'height' : ${height},
+            'width' : ${width},
+            'params' : {}
+          };
+        </script>
+        <script type="text/javascript" src="https://www.highperformanceformat.com/${key}/invoke.js"></script>
+      </body>
+    </html>
+  `;
 
   return (
     <div className={cn(
-      "flex justify-center items-center overflow-hidden",
-      format === 'banner' ? 'w-full min-h-[90px]' : 'w-full min-h-[250px]',
+      "bg-stone-100 border border-dashed border-stone-300 flex justify-center items-center overflow-hidden relative rounded-xl",
+      format === 'banner' ? 'w-full min-h-[90px] max-w-[728px]' : 'w-[300px] h-[250px]',
       className
     )}>
-       <div ref={containerRef} className="flex justify-center items-center w-full h-full"></div>
+       {/* Fallback visual so the space doesn't disappear if ads are blocked */}
+       <div className="absolute inset-0 flex flex-col items-center justify-center z-0 opacity-50">
+         <span className="text-[10px] uppercase tracking-wider bg-stone-200 px-2 py-0.5 rounded text-stone-600 font-bold">
+           إعلان
+         </span>
+       </div>
+       
+       <iframe
+         title="Adsterra Ad"
+         srcDoc={adHtml}
+         width={width}
+         height={height}
+         frameBorder="0"
+         scrolling="no"
+         className="z-10 relative"
+         style={{ border: 'none', overflow: 'hidden', width: `${width}px`, height: `${height}px` }}
+       />
     </div>
   );
 };
@@ -125,7 +141,7 @@ export default function App() {
   const [result, setResult] = useState<any>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [history, setHistory] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'analyze' | 'history'>('analyze');
+  const [activeTab, setActiveTab] = useState<'analyze' | 'history' | 'about'>('analyze');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -474,6 +490,15 @@ export default function App() {
               >
                 السجل
               </button>
+              <button
+                onClick={() => setActiveTab('about')}
+                className={cn(
+                  "px-4 py-1.5 text-sm font-medium rounded-md transition-colors",
+                  activeTab === 'about' ? "bg-white shadow-sm text-stone-900" : "text-stone-500 hover:text-stone-700"
+                )}
+              >
+                تواصل معي
+              </button>
             </div>
             <button
               onClick={logout}
@@ -672,7 +697,7 @@ export default function App() {
               )}
             </div>
           </div>
-        ) : (
+        ) : activeTab === 'history' ? (
           /* History Tab */
           <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
             <div className="p-6 border-b border-stone-100">
@@ -711,6 +736,34 @@ export default function App() {
                 ))}
               </div>
             )}
+          </div>
+        ) : (
+          /* About Tab */
+          <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="p-8 text-center border-b border-stone-100">
+              <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <User className="w-10 h-10 text-amber-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-stone-900">محمد مثنى</h2>
+              <p className="text-stone-500 mt-2">مطور ومؤسس GeoVision AI</p>
+            </div>
+            <div className="p-8 space-y-6 bg-stone-50">
+              <p className="text-stone-700 text-center leading-relaxed">
+                أهلاً بك! تم تطوير هذا التطبيق لمساعدة المنقبين والمهتمين في تحليل الصخور والعينات الجيولوجية باستخدام تقنيات الذكاء الاصطناعي. 
+                <br/><br/>
+                للتواصل، الاستفسار، أو إذا كان لديك أي اقتراح لتطوير التطبيق، يسعدني جداً تواصلك معي عبر القنوات التالية:
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">
+                <a href="https://wa.me/967782210032" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white py-3 px-6 rounded-xl font-medium transition-colors shadow-sm">
+                  <MessageCircle className="w-5 h-5" />
+                  تواصل عبر واتساب
+                </a>
+                <a href="mailto:m0h8mm8d@gmail.com" className="flex items-center justify-center gap-2 bg-stone-800 hover:bg-stone-900 text-white py-3 px-6 rounded-xl font-medium transition-colors shadow-sm">
+                  <Mail className="w-5 h-5" />
+                  إرسال بريد إلكتروني
+                </a>
+              </div>
+            </div>
           </div>
         )}
 
