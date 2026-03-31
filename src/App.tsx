@@ -14,42 +14,6 @@ const AdBanner = ({ format = 'banner', className = '' }: { format?: 'banner' | '
   const width = format === 'banner' ? 728 : 300;
   const height = format === 'banner' ? 90 : 250;
 
-  // Using an iframe with srcDoc is the most reliable way to load Adsterra in a React SPA.
-  // It prevents global `atOptions` variable conflicts when multiple ads are on the same page,
-  // and safely handles Adsterra's use of document.write().
-  const adHtml = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { 
-            margin: 0; 
-            padding: 0; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            width: 100%;
-            height: 100%;
-            background: transparent; 
-          }
-        </style>
-      </head>
-      <body>
-        <script type="text/javascript">
-          atOptions = {
-            'key' : '${key}',
-            'format' : 'iframe',
-            'height' : ${height},
-            'width' : ${width},
-            'params' : {}
-          };
-        </script>
-        <script type="text/javascript" src="https://www.highperformanceformat.com/${key}/invoke.js"></script>
-      </body>
-    </html>
-  `;
-
   return (
     <div className={cn(
       "bg-stone-100 border border-dashed border-stone-300 flex justify-center items-center overflow-hidden relative rounded-xl",
@@ -65,7 +29,7 @@ const AdBanner = ({ format = 'banner', className = '' }: { format?: 'banner' | '
        
        <iframe
          title="Adsterra Ad"
-         srcDoc={adHtml}
+         src={`/ad.html?key=${key}&w=${width}&h=${height}`}
          width={width}
          height={height}
          frameBorder="0"
