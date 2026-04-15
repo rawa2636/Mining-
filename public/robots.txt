@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://mining-eosin.vercel.app/sitemap.xml

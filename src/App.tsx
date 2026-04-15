@@ -226,8 +226,6 @@ export default function App() {
         reader.readAsDataURL(file);
       });
 
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      
       const prompt = `قم بإجراء فحص مجهري بصري دقيق للعينة الجيولوجية المرفقة.
 نحن نبحث عن مؤشرات تمعدن الذهب، مع التركيز الشديد والدقيق على "الأكاسيد" (Oxides) وتحديد أنواعها.
 
@@ -248,6 +246,8 @@ export default function App() {
 - explanation: تفسير علمي مبسط باللغة العربية لسبب هذه النسبة، مع التركيز على دور الأكاسيد المكتشفة (نص)
 - regionsOfInterest: مصفوفة (Array) تحتوي على مربعات الإحاطة (Bounding Boxes) للميزات الرئيسية (مثل عروق المرو، الأكاسيد بأنواعها، التشققات) لإنشاء خريطة حرارية. استخدم إحداثيات طبيعية (Normalized coordinates) بين 0.0 و 1.0. كل عنصر يجب أن يحتوي على: label (اسم الميزة بدقة، مثلاً "أكسيد حديد - ليمونيت")، ymin، xmin، ymax، xmax.`;
 
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      
       let response;
       const requestConfig = {
         contents: {
